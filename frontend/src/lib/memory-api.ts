@@ -86,9 +86,7 @@ export type ChatResponse = {
   latency_ms: number | null;
 };
 
-const API_URL = (
-  process.env.NEXT_PUBLIC_MEMORYMATE_API_URL ?? "http://127.0.0.1:8000"
-).replace(/\/+$/, "");
+const API_URL = "/api";
 
 export const USER_ID =
   process.env.NEXT_PUBLIC_MEMORYMATE_USER_ID ?? "default-user";

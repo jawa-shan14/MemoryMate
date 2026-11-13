@@ -141,6 +141,21 @@ npm run dev
 
 App at: http://localhost:3000
 
+### Vercel multi-service deployment
+
+The root `vercel.json` defines a FastAPI `backend` service and a Next.js
+`frontend` service. The frontend is routed publicly; its `/api/*` route handler
+forwards requests to the internal backend using Vercel's
+`MEMORYMATE_BACKEND_URL` service binding. Do not set that binding variable
+manually.
+
+Configure backend secrets and external services in Vercel's environment
+settings. In particular, use a persistent database through `DATABASE_URL`;
+SQLite and `bolt://localhost:7687` are local-development defaults and are not
+durable/reachable defaults for Vercel serverless deployments. Configure
+`NVIDIA_API_KEY` and, when graph features are enabled, a reachable
+`NEO4J_URI` and its credentials.
+
 ---
 
 ## Project Structure
