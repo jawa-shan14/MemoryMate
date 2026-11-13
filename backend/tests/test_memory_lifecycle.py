@@ -102,7 +102,7 @@ def test_cosine_similarity_is_bounded_and_rejects_mismatched_vectors():
         embeddings.cosine_similarity([1.0], [1.0, 0.0])
 
 
-def test_real_sentence_transformer_produces_semantically_useful_embeddings():
+def test_real_embedding_model_produces_semantically_useful_embeddings():
     embeddings = EmbeddingService()
     preference = embeddings.embed("I enjoy programming in Python.")
     paraphrase = embeddings.embed("Python is my favorite programming language.")

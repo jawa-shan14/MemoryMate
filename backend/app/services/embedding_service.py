@@ -1,7 +1,9 @@
-"""Embedding service using sentence-transformers."""
+"""Embedding service using FastEmbed's ONNX runtime."""
 import numpy as np
 import structlog
 from math import isfinite
+from pathlib import Path
+from tempfile import gettempdir
 from app.config import get_settings
 
 logger = structlog.get_logger(__name__)
@@ -15,33 +17,45 @@ class EmbeddingService:
         self._model = None
         self.model_name = settings.embedding_model
         self.dimension = settings.embedding_dimension
+        self.cache_dir = str(Path(gettempdir()) / "memorymate-fastembed")
 
     def _load_model(self):
         if self._model is None:
             try:
-                from sentence_transformers import SentenceTransformer  # type: ignore
+                from fastembed import TextEmbedding
             except ImportError as exc:
                 raise RuntimeError(
-                    "Embedding model dependency missing: install sentence-transformers and torch to enable memory retrieval."
+                    "Embedding model dependency missing: install fastembed to enable memory retrieval."
                 ) from exc
             logger.info("loading_embedding_model", model=self.model_name)
-            self._model = SentenceTransformer(self.model_name)
+            self._model = TextEmbedding(
+                model_name=self.model_name,
+                cache_dir=self.cache_dir,
+            )
             logger.info("embedding_model_loaded", model=self.model_name)
         return self._model
 
     def embed(self, text: str) -> list[float]:
         """Embed a single text string. Returns a list of floats."""
         model = self._load_model()
-        embedding = model.encode(text, normalize_embeddings=True)
-        return self._validate_embedding(embedding.tolist())
+        embedding = next(model.embed([text]))
+        return self._normalize_embedding(embedding.tolist())
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Embed multiple texts at once. More efficient than calling embed() in a loop."""
         if not texts:
             return []
         model = self._load_model()
-        embeddings = model.encode(texts, normalize_embeddings=True, batch_size=32, show_progress_bar=False)
-        return [self._validate_embedding(item) for item in embeddings.tolist()]
+        embeddings = model.embed(texts, batch_size=32)
+        return [self._normalize_embedding(item.tolist()) for item in embeddings]
+
+    def _normalize_embedding(self, embedding: list[float]) -> list[float]:
+        validated = self._validate_embedding(embedding)
+        vector = np.asarray(validated, dtype=np.float64)
+        norm = np.linalg.norm(vector)
+        if norm == 0:
+            return validated
+        return self._validate_embedding((vector / norm).tolist())
 
     def _validate_embedding(self, embedding: list[float]) -> list[float]:
         if len(embedding) != self.dimension:

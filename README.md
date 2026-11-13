@@ -112,7 +112,7 @@ python -m venv venv
 venv\Scripts\activate          # Windows
 # or: source venv/bin/activate  # Linux/Mac
 
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
 # Configure environment
 copy .env.example .env
